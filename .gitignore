@@ -1,0 +1,13 @@
+# Godot 4 engine cache & imports
+.godot/
+*.translation
+
+# Mobile & platform build targets
+/android/
+bin/
+build/
+
+# Windows & macOS OS clutter
+Thumbs.db
+Desktop.ini
+.DS_Store
