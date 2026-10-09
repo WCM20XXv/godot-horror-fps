@@ -7,8 +7,8 @@ extends CharacterBody3D
 @export var sprint_speed: float = 12.0
 @export var crouch_speed: float = 2.5
 @export var jump_velocity: float = 13.0
-@export var jump_gravity_multiplier: float = 3.3 # ascend speed
-@export var fall_gravity_multiplier: float = 5.0 #multiplies player gravity on way down
+@export var jump_gravity_multiplier: float = 3.3 # multiplies player gravity on the way up
+@export var fall_gravity_multiplier: float = 5.0 # multiplies player gravity on the way down
 @export var mouse_sensitivity: float = 0.003
 
 @export_group("Stamina Settings")
@@ -47,16 +47,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _physics_process(delta: float) -> void:
-	# 1. Gravity
+	# 1. Gravity (heavier on the way down than on the way up)
 	if not is_on_floor():
 		if velocity.y < 0:
-			velocity += get_gravity() * jump_gravity_multiplier * delta
-		else: 
 			velocity += get_gravity() * fall_gravity_multiplier * delta
+		else:
+			velocity += get_gravity() * jump_gravity_multiplier * delta
 
 	# 2. Input Direction
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	
+
 	# 3. State Checks
 	var is_crouching: bool = Input.is_action_pressed("crouch") and is_on_floor()
 	var is_moving_forward: bool = input_dir.y < 0.0
@@ -86,10 +86,12 @@ func _physics_process(delta: float) -> void:
 	var target_head_y: float = CROUCHING_HEAD_Y if is_crouching else STANDING_HEAD_Y
 	head.position.y = lerp(head.position.y, target_head_y, delta * CROUCH_TRANSITION_SPEED)
 
-	# 7. Collision Shape Resizing
+	# 7. Collision Shape Resizing (keeps the feet on the ground while the height changes)
 	if collision_shape.shape is CapsuleShape3D:
+		var capsule := collision_shape.shape as CapsuleShape3D
 		var target_height: float = CROUCHING_HEIGHT if is_crouching else STANDING_HEIGHT
-		collision_shape.shape.height = lerp(collision_shape.shape.height, target_height, delta * CROUCH_TRANSITION_SPEED)
+		capsule.height = lerp(capsule.height, target_height, delta * CROUCH_TRANSITION_SPEED)
+		collision_shape.position.y = capsule.height * 0.5
 
 	# 8. Jump
 	if Input.is_action_just_pressed("ui_accept") and is_on_floor() and not is_crouching:
